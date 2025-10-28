@@ -1,0 +1,88 @@
+import pandas as pd
+import re
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+# Function to convert time to minutes
+def time_to_min(t):
+    h, m = map(int, t.split(':'))
+    hr = h * 60 + m
+    return hr
+
+# Function to search the Excel file for a string
+def search_excel_for_string(file_path, search_string):
+    tot_hr = 0.0
+
+    # Read the Excel file
+    df = pd.read_excel(file_path)
+
+    # Iterate over each cell in the dataframe
+    for index, row in df.iterrows():
+        for col in df.columns:
+            cell_value = str(row[col])
+            # Check if the search string is present in the cell
+            if search_string in cell_value:
+                result_text.insert(tk.END, f"'{row[0]}', '{col}': {cell_value}\n")
+
+                ctype = ['tut', 'exp']
+                if any(c in cell_value for c in ctype):
+                    wt = 0.5
+                else:
+                    wt = 1.0
+
+                times = row[0]
+                times = times.split("-")
+                times = [x.strip() for x in times]
+                contacthr = time_to_min(times[1]) - time_to_min(times[0])
+                if contacthr != 0:
+                    contacthr = (contacthr + 10.0) / 60.0 * wt
+
+                tot_hr += contacthr
+
+    result_text.insert(tk.END, f"\nTotal number of contact hours: {tot_hr}\n")
+    messagebox.showinfo("Total Hours",f"Total number of contact hours: {tot_hr}")
+
+# Function to open file dialog and select an Excel file
+def browse_file():
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.xls")])
+    file_path_entry.delete(0, tk.END)
+    file_path_entry.insert(0, file_path)
+
+# Function to start the search
+def start_search():
+    file_path = file_path_entry.get()
+    search_string = search_string_entry.get()
+    if file_path and search_string:
+        result_text.delete(1.0, tk.END)
+        search_excel_for_string(file_path, search_string)
+    else:
+        messagebox.showwarning("Input Error", "Please provide both file path and search string.")
+
+# Set up the GUI window
+root = tk.Tk()
+root.title("Timetable-PHYSICS-Search Tool")
+
+# File path entry and button
+file_path_label = tk.Label(root, text="Excel File Path:")
+file_path_label.grid(row=0, column=0, padx=10, pady=10)
+file_path_entry = tk.Entry(root, width=50)
+file_path_entry.grid(row=0, column=1, padx=10, pady=10)
+browse_button = tk.Button(root, text="Browse", command=browse_file)
+browse_button.grid(row=0, column=2, padx=10, pady=10)
+
+# Search string entry
+search_string_label = tk.Label(root, text="Search String:")
+search_string_label.grid(row=1, column=0, padx=10, pady=10)
+search_string_entry = tk.Entry(root, width=50)
+search_string_entry.grid(row=1, column=1, padx=10, pady=10)
+
+# Search button
+search_button = tk.Button(root, text="Search", command=start_search)
+search_button.grid(row=2, column=1, padx=10, pady=10)
+
+# Text widget to display results
+result_text = tk.Text(root, height=25, width=120)
+result_text.grid(row=3, column=0, columnspan=4, padx=10, pady=10)
+
+# Run the GUI loop
+root.mainloop()
